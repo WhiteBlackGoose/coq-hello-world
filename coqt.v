@@ -189,3 +189,140 @@ Proof.
     exact F1.
 Qed.
 
+Theorem andb_is_and : (forall a b, Is_true (andb a b) <-> Is_true a /\ Is_true b).
+Proof.
+  intros a b.
+  constructor.
+    intros H.
+    case a, b.
+      simpl.
+      exact (conj I I).
+      simpl in H.
+      case H.
+      simpl in H.
+      case H.
+      simpl in H.
+      case H.
+    intros H.
+    destruct H as [ga gb].
+    case a, b.
+    simpl.
+    exact I.
+    simpl.
+    simpl in gb.
+    exact gb.
+    simpl.
+    simpl in ga.
+    exact ga.
+    simpl.
+    simpl in ga.
+    exact ga.
+Qed.
+
+Lemma not_false : (~ False).
+Proof.
+  intros a.
+  exact a.
+Qed.
+
+Theorem negb_is_not : (forall a, Is_true (negb a) <-> (~(Is_true a))).
+Proof.
+  intros a.
+  case a.
+  constructor.
+  + simpl.
+    intros f.
+    case f.
+  + simpl.
+    intros nn.
+    exact (nn I).
+  + simpl.
+    exact (prop_implies_iff _ not_false).
+Qed.
+
+Definition basic_predicate
+:=
+  (fun a => Is_true (andb a true))
+.
+
+Theorem thm_exists_basics : (exists a, Is_true (andb a true)).
+Proof.
+  pose (witness := true).
+  refine (ex_intro _ witness _).
+    simpl.
+    exact I.
+Qed.
+
+Theorem thm_forall_exists : (forall b, (exists a, Is_true(eqb a b))).
+Proof.
+  intros b.
+  case b.
+  + pose (w := true).
+    refine (ex_intro _ w _).
+      simpl.
+      exact I.
+  + pose (w := false).
+    refine (ex_intro _ w _).
+      simpl.
+      exact I.
+Qed.
+
+Theorem eqb_a_a : (forall a : bool, Is_true (eqb a a)).
+Proof.
+  intros a.
+  case a.
+    simpl.
+    exact I.
+    simpl.
+    exact I.
+Qed.
+
+Theorem thm_forall_exists__again : (forall b, (exists a, Is_true(eqb a b))).
+Proof.
+  intros b.
+  refine (ex_intro _ b _).
+  exact (eqb_a_a b).
+Qed.
+
+Theorem forall_exists : (forall P : Set->Prop,
+    (forall x, ~(P x)) -> ~(exists x, P x)).
+Proof.
+  intros P G.
+  intros C.
+  destruct C as [x_wit x_proof].
+  pose (inst := G x_wit).
+  exact (inst x_proof).
+Qed.
+
+Inductive and3 (A B C : Prop) : Prop :=
+  conj3  : A -> B -> C -> and3 A B C.
+
+Theorem and3_impl_and : (forall A B C : Prop, and3 A B C -> and A B /\ and B C).
+Proof.
+  intros A B C.
+  constructor.
+  destruct H as [a b c].
+  exact (conj a b).
+  destruct H as [a b c].
+  exact (conj b c).
+Qed.
+
+Inductive list (A : Prop) : Prop :=
+  | empty : list A
+  | add   : A -> list A.
+
+Definition empty_list (A : Prop) (l : list A) : bool :=
+  match l with
+  | empty A => false
+  | add _ => true
+end.
+
+Theorem not_empty_impl : (forall A : Prop, forall l : list A, not (empty_list A l) -> A).
+Proof.
+  intros A l.
+  intros hyp.
+  simpl in hyp.
++ pose (rr := eq l (empty A)).
+  pose (rr := eq l (empty A)).
+  simpl.
+  case hyp.

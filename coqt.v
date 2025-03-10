@@ -1,4 +1,5 @@
 Require Import Bool.
+Require Import List.
 
 Theorem False_cannot_be_proven: ~ False.
 Proof.
@@ -294,8 +295,158 @@ Proof.
   exact (inst x_proof).
 Qed.
 
+Theorem equiv_is_eq : (forall A B : Prop, (A = B) -> (A <-> B)).
+Proof.
+  intros A B.
+  constructor.
+  destruct H as [a].
+  trivial.
+  destruct H as [a].
+  trivial.
+Qed.
+
+Theorem thm_eq_sym : (forall x y : Set, x = y -> y = x).
+Proof.
+  intros x y.
+  intros x_y.
+  destruct x_y as [].
+  exact (eq_refl x).
+Qed.
+
+Theorem thm_eq_trans__again : (forall x y z: Set, x = y -> y = z -> x = z).
+Proof.
+  intros x y z.
+  intros x_y y_z.
+  rewrite x_y.
+  rewrite <- y_z.
+  exact (eq_refl y).
+Qed.
+
+Theorem neq_nega: (forall a, a <> (negb a)).
+Proof.
+  intros a.
+  unfold not.
+  case a.
+    intros a_eq_neg_a.
+    simpl in a_eq_neg_a.
+    discriminate a_eq_neg_a.
+
+    intros a_eq_neg_a.
+    simpl in a_eq_neg_a.
+    discriminate a_eq_neg_a.
+Qed.
+
+
+Theorem plus_n_O : (forall n, n + O = n).
+Proof.
+  intros n.
+  elim n.
+  + simpl.
+    exact (eq_refl 0).
+  + intros n0 f.
+    simpl.
+    rewrite f.
+    exact (eq_refl (S n0)).
+Qed.
+
+Theorem plus_sym: (forall n m, n + m = m + n).
+Proof.
+  intros n m.
+  elim n.
+    elim m.
+      exact (eq_refl (O + O)).
+      intros m'.
+      intros inductive_hyp_m.
+      simpl.
+      rewrite <- inductive_hyp_m.
+      simpl.
+      exact (eq_refl (S m')).
+
+    intros n' ind_hyp_n.
+    simpl.
+    rewrite ind_hyp_n.
+    elim m.
+      simpl.
+      exact (eq_refl (S n')).
+      intros m'.
+      intros inductive_hyp_m.
+      simpl.
+      rewrite inductive_hyp_m.
+      simpl.
+      exact (eq_refl (S (m' + S n'))).
+Qed.
+
+Theorem plus_sym_my: (forall n m, n + m = m + n).
+Proof.
+  intros n m.
+  elim n.
+  + simpl.
+    exact (eq_sym (plus_n_O _)).
+  + intros n' ind.
+    simpl.
+    rewrite ind.
+    elim m.
+    - simpl.
+      exact (eq_refl (S n')).
+    - intros m' ind2.
+      simpl.
+      rewrite ind2.
+      exact (eq_refl (S (m' + S n'))).
+Qed.
+
+Theorem cons_adds_one_to_length :
+   (forall A:Type,
+   (forall (x : A) (lst : list A),
+   length (x :: lst) = (S (length lst)))).
+Proof.
+  intros A x lst.
+  simpl.
+  exact (eq_refl (S (length lst))).
+Qed.
+
+Inductive idk (A:Type) :=
+  | nuhuh : idk A
+  | nocap : A -> idk A.
+
+Definition xd (A:Type) (lst:list A) : idk A :=
+  match lst with
+  | nil => nuhuh _
+  | smh :: _ => nocap _ smh
+  end.
+  
+
+Fixpoint sum (lst : list nat) : nat :=
+  match lst with
+  | hd :: rst => hd + sum rst
+  | nil => 0
+  end.
+
+Compute sum (1 :: 2 :: 3 :: nil).
+
+Definition hd_error (A : Type) (l : list A)
+:=
+  match l with
+    | nil => None
+    | x :: _ => Some x
+  end.
+
+Theorem correctness_of_hd_error :
+   (forall A:Type,
+   (forall (x : A) (lst : list A),
+   (hd_error A nil) = None /\ (hd_error A (x :: lst)) = Some x)).
+Proof.
+  intros A x lst.
+  constructor.
+  + simpl.
+    exact (eq_refl (None)).
+  + simpl.
+    exact (eq_refl (Some x)).
+Qed.
+
+
 Inductive and3 (A B C : Prop) : Prop :=
   conj3  : A -> B -> C -> and3 A B C.
+
 
 Theorem and3_impl_and : (forall A B C : Prop, and3 A B C -> and A B /\ and B C).
 Proof.
@@ -307,22 +458,93 @@ Proof.
   exact (conj b c).
 Qed.
 
-Inductive list (A : Prop) : Prop :=
-  | empty : list A
-  | add   : A -> list A.
-
-Definition empty_list (A : Prop) (l : list A) : bool :=
+Definition empty_list (A : Type) (l : list A) : bool :=
   match l with
-  | empty A => false
-  | add _ => true
+  | nil => true
+  | _ => false
 end.
 
-Theorem not_empty_impl : (forall A : Prop, forall l : list A, not (empty_list A l) -> A).
+Theorem not_empty_impl :
+    (forall A : Type,
+    forall l : list A,
+    not (Is_true (empty_list A l)) -> A).
 Proof.
-  intros A l.
-  intros hyp.
-  simpl in hyp.
-+ pose (rr := eq l (empty A)).
-  pose (rr := eq l (empty A)).
-  simpl.
-  case hyp.
+  intros A lst.
+  unfold not.
+  intros premise.
+  induction lst.
+  + simpl in premise.
+    case (premise I).
+  + simpl in premise.
+    exact a.
+Qed.
+
+Section MyMergesort.
+
+Require Import Nat.
+
+Fixpoint sorted (lst:list nat): bool :=
+  match lst with
+  | nil => true
+  | _ :: nil => true
+  | hd1 :: ((hd2 :: rst) as tl) => (hd1 <=? hd2) && sorted tl
+  end.
+
+Fixpoint merge (l1:list nat) (l2:list nat) :=
+  match l1, l2 with
+  | nil, rst | rst, nil => rst
+  | (h1 :: r1), (h2 :: r2) =>
+    if h1 <=? h2 then
+      h1 :: h2 :: merge r1 r2
+    else
+      h2 :: h1 :: merge r1 r2
+  end.
+
+Lemma sublist_sorted : (forall a l, Is_true (sorted (a :: l)) -> Is_true (sorted l)).
+Proof.
+  intros a l.
+  intros prem.
+  induction l.
+  + trivial.
+  + simpl in prem.
+    pose (prem' := andb_prop_elim _ _ prem).
+    destruct prem' as [_ sorted_l].
+    exact sorted_l.
+Qed.
+
+Lemma merge_nil_stays : (forall l, merge l nil = l).
+Proof.
+  intros l.
+  induction l.
+  + simpl.
+    exact (eq_refl nil).
+  + simpl.
+    exact (eq_refl (a :: l)).
+Qed.
+
+Theorem merge_returns_sorted :
+    (forall l1 l2 : list nat,
+    Is_true (sorted l1) /\ Is_true (sorted l2)
+    -> Is_true (sorted (merge l1 l2))).
+Proof.
+  intros l1 l2.
+  elim l1.
+  elim l2.
+  + simpl.
+    trivial.
+  + simpl.
+    intros a l' prem.
+    intros prem'.
+    destruct prem' as [_ i].
+    exact i.
+  + intros a l' step prem.
+    destruct prem as [sorted_a_l' sorted_l2].
+    assert (sorted_l'_l2 : Is_true (sorted (merge l' l2))).
+    {
+      exact (step (conj (sublist_sorted a l' sorted_a_l') sorted_l2)).
+    }
+    clear step.
+    destruct l2 as [ | a' l2'].
+    - rewrite (merge_nil_stays (a :: l')).
+      exact sorted_a_l'.
+    - 

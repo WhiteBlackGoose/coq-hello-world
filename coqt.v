@@ -507,7 +507,7 @@ Proof.
   induction l.
   + trivial.
   + simpl in prem.
-    pose (prem' := andb_prop_elim _ _ prem).
+    assert (prem' := andb_prop_elim _ _ prem).
     destruct prem' as [_ sorted_l].
     exact sorted_l.
 Qed.
@@ -521,6 +521,17 @@ Proof.
   + simpl.
     exact (eq_refl (a :: l)).
 Qed.
+
+Lemma sorted_merge_sublist :
+    (forall a l1 l2,
+      Is_true (sorted l1)
+      -> Is_true (sorted l2)
+      -> Is_true (sorted (merge l1 (a :: l2)))
+      -> Is_true (sorted (merge l1 l2))).
+Proof.
+  intros a l1 l2.
+  admit.
+Admitted.
 
 Theorem merge_returns_sorted :
     (forall l1 l2 : list nat,
@@ -547,4 +558,13 @@ Proof.
     destruct l2 as [ | a' l2'].
     - rewrite (merge_nil_stays (a :: l')).
       exact sorted_a_l'.
-    - 
+    - simpl.
+      destruct (a <=? a') eqn:f.
+      * simpl.
+        rewrite f.
+        assert (sorted_l'_l2' : Is_true (sorted (merge l' l2'))).
+        {
+          exact (sorted_merge_sublist )
+        }
+        simpl.
+        rewrite (Is_true_eq_true )

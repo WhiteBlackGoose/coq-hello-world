@@ -33,6 +33,9 @@ Class has_identity (A : Type) {m : magma A} :=
   { id : A;
     id_holds : identity A id op }.
 
+Class commutative (A : Type) {m : magma A} :=
+  { comm : forall a b : A, op a b = op b a }.
+
 Class semigroup (A : Type)
   {q1 : magma A}
   {q2 : associative A} := {}.
@@ -59,13 +62,37 @@ Class group (A : Type)
   {q2 : associative A}
   {q3 : divisible A}
   {q4 : has_identity A} := {}.
+Class abelian_group (A : Type)
+  `{q : group A}
+  {c : commutative A}
+  := {}.
 
 
-Instance nat_magma : magma nat :=
+
+Definition divisibility_except (A : Type) (hole : A) (inv : A -> A -> A) {m : magma A} :=
+  forall a b : A, b <> hole -> op (inv a b) b = a /\ op b (inv a b) = a.
+
+Class field (A : Type)
+  {g_add : magma A}
+  {g_add_id : has_identity A}
+  `{g_add_g : abelian_group A}
+  {g_mul : magma A}
+  `{g_mul_comm : commutative A}
+  := {
+    inv : A -> A -> A;
+    div_non_zero : divisibility_except A (@id A g_add g_add_id) inv;
+    distrib :
+      let add a b := @op A g_add a b in
+      let mul a b := @op A g_mul a b in
+      forall a b c : A, mul a (add b c) = add (mul a b) (mul a c);
+  }.
+
+
+Instance nat_add_magma : magma nat :=
   { op a b := a + b; }.
 
 #[refine]
-Instance nat_assoc : associative nat := {}.
+Instance nat_add_assoc : associative nat := {}.
 Proof.
   intros a b c.
   simpl.
@@ -101,7 +128,7 @@ Proof.
 Qed.
 
 #[refine]
-Instance nat_identity : has_identity nat := {
+Instance nat_add_identity : has_identity nat := {
   id := 0;
 }.
 Proof.
@@ -123,3 +150,9 @@ Proof.
   destruct f as [_ inv].
   simplify_eq inv.
 Qed.
+
+
+Instance nat_mul_magma : magma nat :=
+  { op a b := a * b; }.
+
+

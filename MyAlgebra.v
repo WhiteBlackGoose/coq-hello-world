@@ -1,6 +1,9 @@
 Require Import Bool.
 Require Import Nat.
 
+Require Import Arith.
+Require Import Arith.PeanoNat.
+
 (*
 
 https://en.wikipedia.org/wiki/Magma_(algebra)#Types_of_magma
@@ -19,6 +22,9 @@ Definition identity (A : Type) (id : A) (op : A -> A -> A) :=
 Definition commutativity (A : Type) (op : A -> A -> A) :=
   forall a b : A, op a b = op b a.
 
+Definition distributivity (A : Type) (add : A -> A -> A) (mul : A -> A -> A) :=
+    forall a b c : A, mul a (add b c) = add (mul a b) (mul a c).
+
 Class magma (A : Type) :=
   { op : A -> A -> A }.
 
@@ -35,6 +41,9 @@ Class has_identity (A : Type) {m : magma A} :=
 
 Class commutative (A : Type) {m : magma A} :=
   { comm : forall a b : A, op a b = op b a }.
+
+Class distributive (A : Type) (add : A -> A -> A) (mul : A -> A -> A) :=
+  { distrib : distributivity A add mul }.
 
 Class semigroup (A : Type)
   {q1 : magma A}
@@ -68,6 +77,16 @@ Class abelian_group (A : Type)
   := {}.
 
 
+Class ring (A : Type)
+  (g_add : magma A)
+  `{g_add_g : abelian_group A }
+  (g_mul : magma A)
+  {g_mul_ass : @associative A g_mul }
+  {g_mul_id : @has_identity A g_mul }
+  `{g_mul_mon : @monoid A g_mul g_mul_ass g_mul_id }
+  `{g_mul_comm : @commutative A g_mul }
+  {g_distr : distributive A (@op A g_add) (@op A g_mul)}
+  := {}.
 
 Definition divisibility_except (A : Type) (hole : A) (inv : A -> A -> A) {m : magma A} :=
   forall a b : A, b <> hole -> op (inv a b) b = a /\ op b (inv a b) = a.
@@ -78,81 +97,10 @@ Class field (A : Type)
   `{g_add_g : abelian_group A}
   {g_mul : magma A}
   `{g_mul_comm : commutative A}
+  {g_distr : distributive A (@op A g_add) (@op A g_mul)}
   := {
     inv : A -> A -> A;
     div_non_zero : divisibility_except A (@id A g_add g_add_id) inv;
-    distrib :
-      let add a b := @op A g_add a b in
-      let mul a b := @op A g_mul a b in
-      forall a b c : A, mul a (add b c) = add (mul a b) (mul a c);
   }.
-
-
-Instance nat_add_magma : magma nat :=
-  { op a b := a + b; }.
-
-#[refine]
-Instance nat_add_assoc : associative nat := {}.
-Proof.
-  intros a b c.
-  simpl.
-  elim a.
-  elim b.
-  elim c.
-  + simpl.
-    exact (eq_refl 0).
-  + intros n.
-    simpl.
-    intros _.
-    exact (eq_refl (S n)).
-  + intros n.
-    simpl.
-    intros _.
-    exact (eq_refl (S (n + c))).
-  + intros n.
-    intros prem.
-    simpl.
-    rewrite prem.
-    exact (eq_refl (S (n + b + c))).
-Qed.
-
-Lemma plus_0 : (forall n : nat, n + 0 = n).
-Proof.
-  intros n.
-  induction n.
-  + simpl.
-    exact (eq_refl 0).
-  + simpl.
-    rewrite IHn.
-    exact (eq_refl (S n)).
-Qed.
-
-#[refine]
-Instance nat_add_identity : has_identity nat := {
-  id := 0;
-}.
-Proof.
-+ intros a.
-  constructor.
-  - simpl.
-    exact (eq_refl a).
-  - simpl.
-    exact (plus_0 a).
-Qed.
-
-Theorem addition_not_divisible_by_subtraction : (~ (divisibility nat add sub)).
-Proof.
-  unfold not.
-  intros prop.
-  unfold divisibility in prop.
-  assert (f := prop 1 4).
-  simpl in f.
-  destruct f as [_ inv].
-  simplify_eq inv.
-Qed.
-
-
-Instance nat_mul_magma : magma nat :=
-  { op a b := a * b; }.
 
 
